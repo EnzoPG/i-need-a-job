@@ -1,22 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# INeedAJob
 
-## Getting Started
+AI-powered job hunting assistant with automated job discovery, AI match scoring, and deep company research.
 
-First, run the development server:
+## Getting Started (Docker First)
 
+This project is configured **Docker-first** so you don't need to run `npm install` on your host machine. Docker manages dependencies inside isolated container volumes.
+
+### 1. Configure Environment Variables
+Copy `.env.example` to `.env.local` and add your keys:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Start the Application
+Run the development environment using Docker Compose:
+```bash
+docker compose up
+# or
+npm run docker:dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open [http://localhost:3000](http://localhost:3000) in your browser. Changes you make to files on your host machine will hot-reload automatically inside the container.
+
+### Helpful Docker Commands
+```bash
+# Rebuild image after adding new dependencies to package.json
+docker compose up --build
+
+# Stop the containers
+docker compose down
+```
+
+---
+
+## Alternative: Local Node Development (Optional)
+If you prefer running without Docker:
+```bash
+npm install
+npm run dev
+```
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

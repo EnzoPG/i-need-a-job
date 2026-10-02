@@ -56,3 +56,8 @@ next-env.d.ts
 .claude/
 .posthog/
 .env.local
+
+# Explicitly track docker-compose configuration
+!docker-compose.yml
+!docker-compose*.yml
+
