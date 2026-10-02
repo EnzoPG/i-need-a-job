@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: Props) {
           <Link href="/" className="inline-block transition-opacity hover:opacity-90">
             <Image
               src="/logo.png"
-              alt="JobPilot"
+              alt="INeedAJob"
               width={140}
               height={36}
               priority
@@ -31,7 +31,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <div className="bg-surface border border-border rounded-2xl p-8 shadow-xs">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold tracking-tight text-text-primary">
-              Welcome to JobPilot
+              Welcome to INeedAJob
             </h1>
             <p className="mt-2 text-sm text-text-secondary">
               Sign in with your developer account to get started.
@@ -48,7 +48,7 @@ export default async function LoginPage({ searchParams }: Props) {
 
           <div className="mt-6 pt-6 border-t border-border text-center">
             <p className="text-xs text-text-muted">
-              By signing in, you agree to JobPilot&apos;s{" "}
+              By signing in, you agree to INeedAJob&apos;s{" "}
               <Link href="#" className="underline hover:text-text-secondary">
                 Terms of Service
               </Link>{" "}

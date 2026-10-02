@@ -16,14 +16,14 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 1: Foundation
 
-- [x] 01 Homepage
-- [x] 02 Auth
-- [x] 03 PostHog Initialization
-- [ ] 04 Database Schema
+- [X] 01 Homepage
+- [X] 02 Auth
+- [X] 03 PostHog Initialization
+- [X] 04 Database Schema
 
 ### Phase 2: Profile Page
 
-- [x] 05 Profile Page: Full UI
+- [X] 05 Profile Page: Full UI
 - [ ] 06 Profile Save Logic
 - [ ] 07 AI Profile Extraction from Resume
 - [ ] 08 Resume PDF Generation from Profile
@@ -61,5 +61,3 @@ Update this file after every completed feature. Any AI agent reading this should
 
 * Protected routes `/profile`, `/dashboard`, and `/find-jobs` redirect unauthenticated visitors to `/login` via [proxy.ts](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/proxy.ts).
 * InsForge user object contains `{ email, profile: { name, avatar_url }, metadata }`.
-
-

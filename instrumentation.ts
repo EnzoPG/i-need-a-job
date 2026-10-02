@@ -14,7 +14,7 @@ const missingVariable = !projectToken
 const loggerProvider =
   !missingVariable && host && projectToken
     ? new LoggerProvider({
-        resource: resourceFromAttributes({ "service.name": "jobpilot-web" }),
+        resource: resourceFromAttributes({ "service.name": "ineedajob-web" }),
         processors: [
           new BatchLogRecordProcessor({
             exporter: new OTLPLogExporter({
@@ -29,7 +29,7 @@ const loggerProvider =
       })
     : null;
 
-const posthogLogger = loggerProvider?.getLogger("jobpilot-posthog-exporter");
+const posthogLogger = loggerProvider?.getLogger("ineedajob-posthog-exporter");
 
 export function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") {
