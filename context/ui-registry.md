@@ -53,3 +53,20 @@ After building any component — update this file with the component name, file 
 ### LoginPage
 - **File**: `app/(auth)/login/page.tsx`
 - **Classes**: `min-h-screen bg-diagonal-stripes flex flex-col justify-center items-center px-4 py-12`, `bg-surface border border-border rounded-2xl p-8 shadow-xs`, `text-2xl font-bold tracking-tight text-text-primary`, `text-xs text-text-muted`
+
+### CompletionIndicator
+- **File**: `components/profile/CompletionIndicator.tsx`
+- **Classes**: `bg-surface border border-border rounded-2xl p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-xs`, `text-error bg-error/10 border border-error/20 px-2 py-0.5 rounded text-[11px] font-semibold uppercase tracking-wider`, circular SVG meter with `stroke="var(--color-error)"`
+
+### ResumeUpload
+- **File**: `components/profile/ResumeUpload.tsx`
+- **Classes**: `bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs`, dashed dropzone: `border-2 border-dashed rounded-xl p-8 text-center`, `bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-medium px-4 py-2 rounded-lg`
+
+### ProfileForm
+- **File**: `components/profile/ProfileForm.tsx`
+- **Classes**: `bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs`, input fields: `w-full bg-surface border border-border rounded-lg px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent`, save button: `w-full bg-accent hover:bg-accent-dark text-accent-foreground font-medium text-sm py-3 rounded-xl shadow-xs`
+
+### ProfilePage
+- **File**: `app/profile/page.tsx`
+- **Classes**: `min-h-screen bg-background flex flex-col`, `flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6`
+
