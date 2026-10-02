@@ -1,6 +1,5 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { signOutAction } from "@/actions/auth";
 import { createInsforgeServer } from "@/lib/insforge-server";
 
 export default async function DashboardPage() {
@@ -9,7 +8,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+      <Navbar showSignOut />
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-8 py-10">
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-border">
           <div>
@@ -20,15 +19,6 @@ export default async function DashboardPage() {
               Welcome back{data?.user?.email ? `, ${data.user.email}` : ""}
             </p>
           </div>
-
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg transition-colors cursor-pointer"
-            >
-              Sign out
-            </button>
-          </form>
         </div>
 
         <div className="bg-surface border border-border rounded-2xl p-8 text-center">

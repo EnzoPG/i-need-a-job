@@ -1,6 +1,17 @@
 import { cookies } from "next/headers";
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { createAuthActions } from "@insforge/sdk/ssr";
+import { SeverityNumber } from "@opentelemetry/api-logs";
+import {
+  flushPostHogLogs,
+  logOAuthCallbackOutcome,
+} from "@/instrumentation";
+
+function flushLogsAfterResponse() {
+  after(async () => {
+    await flushPostHogLogs();
+  });
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +24,11 @@ export async function GET(request: NextRequest) {
         hasCode: !!code,
         hasVerifier: !!verifier,
       });
+      logOAuthCallbackOutcome(
+        "oauth_callback_missing_parameters",
+        SeverityNumber.WARN
+      );
+      flushLogsAfterResponse();
       return NextResponse.redirect(new URL("/login?error=oauth", request.url));
     }
 
@@ -29,13 +45,28 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("[api/auth/callback] Exchange code error:", error);
+      logOAuthCallbackOutcome(
+        "oauth_callback_exchange_failed",
+        SeverityNumber.ERROR
+      );
+      flushLogsAfterResponse();
       return NextResponse.redirect(new URL("/login?error=oauth", request.url));
     }
 
     response.cookies.delete("insforge_code_verifier");
+    logOAuthCallbackOutcome(
+      "oauth_callback_exchange_succeeded",
+      SeverityNumber.INFO
+    );
+    flushLogsAfterResponse();
     return response;
   } catch (error) {
     console.error("[api/auth/callback] Unexpected error:", error);
+    logOAuthCallbackOutcome(
+      "oauth_callback_unexpected_error",
+      SeverityNumber.ERROR
+    );
+    flushLogsAfterResponse();
     return NextResponse.redirect(new URL("/login?error=oauth", request.url));
   }
 }

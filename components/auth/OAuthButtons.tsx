@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import posthog from "posthog-js";
 import { signInWithOAuthAction } from "@/actions/auth";
 
 type Props = {
@@ -15,6 +16,7 @@ export function OAuthButtons({ className = "" }: Props) {
     try {
       setLoadingProvider(provider);
       setErrorMessage(null);
+      posthog.capture("oauth_sign_in_started", { provider });
       const res = await signInWithOAuthAction(provider);
       if (res && !res.success && res.error) {
         setErrorMessage(res.error);
