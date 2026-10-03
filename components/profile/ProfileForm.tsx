@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, Calendar } from "lucide-react";
+import { Plus, X, Calendar, AlertCircle, CheckCircle2 } from "lucide-react";
+import { saveProfileAction } from "@/actions/profile";
 
 export type ProfileData = {
   fullName: string;
@@ -43,20 +44,20 @@ type Props = {
 
 export function ProfileForm({ initialData = {}, onSave, className = "" }: Props) {
   const [formData, setFormData] = useState<ProfileData>({
-    fullName: initialData.fullName || "Faizan Ali",
-    email: initialData.email || "",
-    phone: initialData.phone || "+1 (555) 000-0000",
-    location: initialData.location || "",
-    linkedinUrl: initialData.linkedinUrl || "https://linkedin.com/in/faizan",
-    portfolioUrl: initialData.portfolioUrl || "https://github.com/jsmastery",
-    workAuthorization: initialData.workAuthorization || "Citizen",
-    currentTitle: initialData.currentTitle || "Frontend Engineer",
-    experienceLevel: initialData.experienceLevel || "Junior",
-    yearsExperience: initialData.yearsExperience ? String(initialData.yearsExperience) : "4",
+    fullName: initialData.fullName ?? "Faizan Ali",
+    email: initialData.email ?? "",
+    phone: initialData.phone ?? "+1 (555) 000-0000",
+    location: initialData.location ?? "",
+    linkedinUrl: initialData.linkedinUrl ?? "https://linkedin.com/in/faizan",
+    portfolioUrl: initialData.portfolioUrl ?? "https://github.com/jsmastery",
+    workAuthorization: initialData.workAuthorization ?? "Citizen",
+    currentTitle: initialData.currentTitle ?? "Frontend Engineer",
+    experienceLevel: initialData.experienceLevel ?? "Junior",
+    yearsExperience: initialData.yearsExperience !== undefined ? String(initialData.yearsExperience) : "4",
     skills: initialData.skills && initialData.skills.length > 0
       ? initialData.skills
       : ["React", "TypeScript", "Next.js", "Tailwind CSS"],
-    industries: initialData.industries || [],
+    industries: initialData.industries ?? [],
     workExperience: initialData.workExperience && initialData.workExperience.length > 0
       ? initialData.workExperience
       : [
@@ -71,20 +72,21 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
               "Built Next.js features and optimized web vitals. Led a team of 3 developers.",
           },
         ],
-    highestDegree: initialData.highestDegree || "High School",
-    fieldOfStudy: initialData.fieldOfStudy || "Computer Science",
-    institutionName: initialData.institutionName || "",
-    graduationYear: initialData.graduationYear || "",
-    jobTitlesSeeking: initialData.jobTitlesSeeking || "Frontend Engineer, React Developer",
-    remotePreference: initialData.remotePreference || "Any",
-    salaryExpectation: initialData.salaryExpectation || "",
-    preferredLocations: initialData.preferredLocations || "",
+    highestDegree: initialData.highestDegree ?? "High School",
+    fieldOfStudy: initialData.fieldOfStudy ?? "Computer Science",
+    institutionName: initialData.institutionName ?? "",
+    graduationYear: initialData.graduationYear ?? "",
+    jobTitlesSeeking: initialData.jobTitlesSeeking ?? "Frontend Engineer, React Developer",
+    remotePreference: initialData.remotePreference ?? "Any",
+    salaryExpectation: initialData.salaryExpectation ?? "",
+    preferredLocations: initialData.preferredLocations ?? "",
   });
 
   const [skillInput, setSkillInput] = useState("");
   const [industryInput, setIndustryInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleAddSkill = () => {
     const trimmed = skillInput.trim();
@@ -152,14 +154,23 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     e.preventDefault();
     setIsSaving(true);
     setSavedSuccess(false);
+    setErrorMessage(null);
     try {
       if (onSave) {
         await onSave(formData);
+        setSavedSuccess(true);
+      } else {
+        const result = await saveProfileAction(formData);
+        if (!result.success) {
+          setErrorMessage(result.error || "Failed to save profile");
+        } else {
+          setSavedSuccess(true);
+        }
       }
-      setSavedSuccess(true);
-      setTimeout(() => setSavedSuccess(false), 3000);
+      setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err) {
       console.error("[ProfileForm/handleSubmit]", err);
+      setErrorMessage("An unexpected error occurred while saving your profile");
     } finally {
       setIsSaving(false);
     }
@@ -177,8 +188,16 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
       </div>
 
       {savedSuccess && (
-        <div className="mb-6 p-3 rounded-lg border border-success/30 bg-success-lightest text-success-foreground text-xs">
-          Profile information updated successfully!
+        <div className="mb-6 p-3 rounded-lg border border-success/30 bg-success-lightest text-success-foreground text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+          <span>Profile information updated and saved successfully!</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mb-6 p-3 rounded-lg border border-error/30 bg-error/10 text-error text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-error shrink-0" />
+          <span>{errorMessage}</span>
         </div>
       )}
 

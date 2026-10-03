@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 
 type Props = {
   completionPercentage?: number;
@@ -11,6 +11,7 @@ export function CompletionIndicator({
   missingFields = ["PHONE", "LOCATION", "EDUCATION"],
   className = "",
 }: Props) {
+  const isComplete = completionPercentage === 100;
   // SVG circle circumference for r = 32: 2 * PI * 32 ~= 201
   const radius = 32;
   const circumference = 2 * Math.PI * radius;
@@ -22,20 +23,25 @@ export function CompletionIndicator({
     >
       {/* Left Column: Details & Missing Badges */}
       <div className="flex items-start gap-3.5">
-        <div className="text-error shrink-0 mt-0.5">
-          <AlertCircle className="w-5 h-5 text-error" />
+        <div className={`shrink-0 mt-0.5 ${isComplete ? "text-success" : "text-error"}`}>
+          {isComplete ? (
+            <CheckCircle className="w-5 h-5 text-success" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-error" />
+          )}
         </div>
 
         <div>
           <h2 className="text-base font-semibold text-text-primary">
-            Profile needs attention
+            {isComplete ? "Profile complete" : "Profile needs attention"}
           </h2>
           <p className="mt-1 text-xs text-text-secondary leading-relaxed max-w-xl">
-            Complete the missing fields to improve your chance of getting
-            tailored matches and generating quality resumes.
+            {isComplete
+              ? "Your profile is fully completed and ready for intelligent job matching and autonomous agents."
+              : "Complete the missing fields to improve your chance of getting tailored matches and generating quality resumes."}
           </p>
 
-          {missingFields.length > 0 && (
+          {!isComplete && missingFields.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mt-3.5">
               {missingFields.map((field) => (
                 <span
@@ -66,7 +72,7 @@ export function CompletionIndicator({
             cy="40"
             r={radius}
             fill="none"
-            stroke="var(--color-error)"
+            stroke={isComplete ? "var(--color-success)" : "var(--color-error)"}
             strokeWidth="6"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
