@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, X, Calendar, AlertCircle, CheckCircle2 } from "lucide-react";
 import { saveProfileAction } from "@/actions/profile";
+import { useToast } from "@/components/ui/Toast";
 
 export type ProfileData = {
   fullName: string;
@@ -82,6 +83,7 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     preferredLocations: initialData.preferredLocations ?? "",
   });
 
+  const { toast } = useToast();
   const [skillInput, setSkillInput] = useState("");
   const [industryInput, setIndustryInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -93,6 +95,12 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     if (trimmed && !formData.skills.includes(trimmed)) {
       setFormData((prev) => ({ ...prev, skills: [...prev.skills, trimmed] }));
       setSkillInput("");
+      toast({
+        type: "info",
+        title: "Skill added",
+        message: `"${trimmed}" added to your skills.`,
+        duration: 2500,
+      });
     }
   };
 
@@ -101,6 +109,12 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
       ...prev,
       skills: prev.skills.filter((s) => s !== skill),
     }));
+    toast({
+      type: "info",
+      title: "Skill removed",
+      message: `"${skill}" removed from your skills.`,
+      duration: 2500,
+    });
   };
 
   const handleAddIndustry = () => {
@@ -108,6 +122,12 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     if (trimmed && !formData.industries.includes(trimmed)) {
       setFormData((prev) => ({ ...prev, industries: [...prev.industries, trimmed] }));
       setIndustryInput("");
+      toast({
+        type: "info",
+        title: "Industry added",
+        message: `"${trimmed}" added to industries.`,
+        duration: 2500,
+      });
     }
   };
 
@@ -116,6 +136,12 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
       ...prev,
       industries: prev.industries.filter((i) => i !== industry),
     }));
+    toast({
+      type: "info",
+      title: "Industry removed",
+      message: `"${industry}" removed from industries.`,
+      duration: 2500,
+    });
   };
 
   const handleAddRole = () => {
@@ -135,6 +161,12 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
         },
       ],
     }));
+    toast({
+      type: "info",
+      title: "Role added",
+      message: "New role entry added to work experience.",
+      duration: 2500,
+    });
   };
 
   const handleRoleChange = (
@@ -155,22 +187,52 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     setIsSaving(true);
     setSavedSuccess(false);
     setErrorMessage(null);
+
+    toast({
+      type: "info",
+      title: "Saving profile",
+      message: "Saving your details to InsForge...",
+      duration: 2000,
+    });
+
     try {
       if (onSave) {
         await onSave(formData);
         setSavedSuccess(true);
+        toast({
+          type: "success",
+          title: "Profile saved",
+          message: "Your profile information has been updated successfully.",
+        });
       } else {
         const result = await saveProfileAction(formData);
         if (!result.success) {
-          setErrorMessage(result.error || "Failed to save profile");
+          const errText = result.error || "Failed to save profile";
+          setErrorMessage(errText);
+          toast({
+            type: "error",
+            title: "Save failed",
+            message: errText,
+          });
         } else {
           setSavedSuccess(true);
+          toast({
+            type: "success",
+            title: "Profile saved",
+            message: "Your profile information has been updated successfully.",
+          });
         }
       }
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (err) {
       console.error("[ProfileForm/handleSubmit]", err);
-      setErrorMessage("An unexpected error occurred while saving your profile");
+      const fallbackError = "An unexpected error occurred while saving your profile";
+      setErrorMessage(fallbackError);
+      toast({
+        type: "error",
+        title: "Save error",
+        message: fallbackError,
+      });
     } finally {
       setIsSaving(false);
     }
