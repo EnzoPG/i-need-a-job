@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 1 (Foundation) and Phase 2 (Profile Page)
-**Last completed:** 03 PostHog Initialization and 05 Profile Page UI
-**Next:** 04 Database Schema and 06 Profile Save Logic
+**Phase:** Phase 2 (Profile Page)
+**Last completed:** 04 Database Schema and 06 Profile Save Logic
+**Next:** 07 AI Profile Extraction from Resume and 08 Resume PDF Generation from Profile
 
 ---
 
@@ -19,12 +19,12 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 01 Homepage
 - [x] 02 Auth
 - [x] 03 PostHog Initialization
-- [ ] 04 Database Schema
+- [x] 04 Database Schema
 
 ### Phase 2: Profile Page
 
 - [x] 05 Profile Page: Full UI
-- [ ] 06 Profile Save Logic
+- [x] 06 Profile Save Logic
 - [ ] 07 AI Profile Extraction from Resume
 - [ ] 08 Resume PDF Generation from Profile
 
