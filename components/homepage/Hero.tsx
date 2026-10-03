@@ -16,7 +16,7 @@ export function Hero({ className = "" }: Props) {
         </h1>
 
         <p className="mt-5 text-base sm:text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed">
-          Stop applying blind. JobPilot finds the jobs, researches the companies, and
+          Stop applying blind. INeedAJob finds the jobs, researches the companies, and
           gives you everything you need to stand out.
         </p>
 
@@ -46,7 +46,7 @@ export function Hero({ className = "" }: Props) {
           <div className="relative mx-auto transition-transform">
             <Image
               src="/images/dashboard-demo.png"
-              alt="JobPilot Dashboard Overview"
+              alt="INeedAJob Dashboard Overview"
               width={1200}
               height={628}
               priority

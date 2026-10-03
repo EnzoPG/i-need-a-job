@@ -61,5 +61,3 @@ Update this file after every completed feature. Any AI agent reading this should
 
 * Protected routes `/profile`, `/dashboard`, and `/find-jobs` redirect unauthenticated visitors to `/login` via [proxy.ts](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/proxy.ts).
 * InsForge user object contains `{ email, profile: { name, avatar_url }, metadata }`.
-
-

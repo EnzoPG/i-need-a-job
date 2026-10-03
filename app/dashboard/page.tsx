@@ -30,7 +30,7 @@ export default async function DashboardPage() {
               Authentication Active
             </h2>
             <p className="text-sm text-text-secondary mt-2">
-              You are signed in to JobPilot. The full dashboard UI will be implemented in Phase 5.
+              You are signed in to INeedAJob. The full dashboard UI will be implemented in Phase 5.
             </p>
           </div>
         </div>

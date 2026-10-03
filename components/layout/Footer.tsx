@@ -12,7 +12,7 @@ export function Footer({ className = "" }: Props) {
         <Link href="/" className="flex items-center">
           <Image
             src="/logo.png"
-            alt="JobPilot"
+            alt="INeedAJob"
             width={116}
             height={30}
             className="h-7 w-auto object-contain"

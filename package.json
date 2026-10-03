@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "docker:dev": "docker compose up",
+    "docker:build": "docker compose build",
+    "docker:down": "docker compose down"
   },
   "dependencies": {
     "@insforge/sdk": "^1.5.2",

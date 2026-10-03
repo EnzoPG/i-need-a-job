@@ -32,7 +32,7 @@ export function Features({ className = "" }: Props) {
                 Know the Company Before You Apply
               </h3>
               <p className="mt-1.5 text-sm text-text-secondary leading-relaxed">
-                Stop guessing what a company is about. JobPilot browses their site
+                Stop guessing what a company is about. INeedAJob browses their site
                 and gives you everything you need to apply with confidence.
               </p>
             </div>

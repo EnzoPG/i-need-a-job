@@ -14,7 +14,7 @@ export function HowItWorks({ className = "" }: Props) {
             <div className="w-full max-w-md">
               <Image
                 src="/images/agnet-log.png"
-                alt="JobPilot AI Agent execution log"
+                alt="INeedAJob AI Agent execution log"
                 width={520}
                 height={420}
                 className="w-full h-auto object-contain shadow-xs rounded-xl"
@@ -45,7 +45,7 @@ export function HowItWorks({ className = "" }: Props) {
                 AI-Powered Job Matching
               </h3>
               <p className="mt-1.5 text-sm text-text-secondary leading-relaxed">
-                Stop guessing which jobs are worth applying to. JobPilot scores
+                Stop guessing which jobs are worth applying to. INeedAJob scores
                 every role against your actual skills so you focus on the ones that
                 matter.
               </p>
