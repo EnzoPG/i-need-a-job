@@ -70,3 +70,8 @@ After building any component — update this file with the component name, file 
 - **File**: `app/profile/page.tsx`
 - **Classes**: `min-h-screen bg-background flex flex-col`, `flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6`
 
+### Toast
+- **File**: `components/ui/Toast.tsx`
+- **Classes**: container: `fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none`, toast card: `pointer-events-auto bg-surface border border-border rounded-xl p-4 shadow-md flex items-start gap-3 transition-all`, title: `text-sm font-semibold text-text-primary leading-tight`, message: `text-xs text-text-secondary mt-1 leading-relaxed`, dismiss: `text-text-muted hover:text-text-primary transition-colors cursor-pointer`
+
+
