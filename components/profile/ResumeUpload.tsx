@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { uploadResumeAction } from "@/actions/profile";
+import { useToast } from "@/components/ui/Toast";
 
 type Props = {
   resumeUrl?: string | null;
@@ -15,6 +16,7 @@ export function ResumeUpload({
   onFileSelect,
   className = "",
 }: Props) {
+  const { toast } = useToast();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -27,18 +29,37 @@ export function ResumeUpload({
 
   const processFile = async (file: File) => {
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      setUploadError("Only PDF files are supported");
+      const err = "Only PDF files are supported";
+      setUploadError(err);
+      toast({
+        type: "error",
+        title: "Invalid file format",
+        message: err,
+      });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setUploadError("File size exceeds 5MB limit");
+      const err = "File size exceeds 5MB limit";
+      setUploadError(err);
+      toast({
+        type: "error",
+        title: "File too large",
+        message: err,
+      });
       return;
     }
 
     setSelectedFileName(file.name);
     setUploadError(null);
     setUploadSuccess(false);
+
+    toast({
+      type: "info",
+      title: "Uploading resume",
+      message: "Sending your PDF to secure storage...",
+      duration: 2500,
+    });
 
     if (onFileSelect) {
       onFileSelect(file);
@@ -52,17 +73,34 @@ export function ResumeUpload({
       const result = await uploadResumeAction(formData);
 
       if (!result.success) {
-        setUploadError(result.error || "Failed to upload resume");
+        const err = result.error || "Failed to upload resume";
+        setUploadError(err);
+        toast({
+          type: "error",
+          title: "Upload failed",
+          message: err,
+        });
       } else {
         setUploadSuccess(true);
         if (result.resumeUrl) {
           setCurrentResumeUrl(result.resumeUrl);
         }
+        toast({
+          type: "success",
+          title: "Resume uploaded",
+          message: "Your resume is now stored and active on your profile.",
+        });
         setTimeout(() => setUploadSuccess(false), 4000);
       }
     } catch (err) {
       console.error("[ResumeUpload/processFile]", err);
-      setUploadError("An unexpected error occurred during upload");
+      const fallbackError = "An unexpected error occurred during upload";
+      setUploadError(fallbackError);
+      toast({
+        type: "error",
+        title: "Upload error",
+        message: fallbackError,
+      });
     } finally {
       setIsUploading(false);
     }
