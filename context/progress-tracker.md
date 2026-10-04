@@ -7,8 +7,8 @@ Update this file after every completed feature. Any AI agent reading this should
 ## Current Status
 
 **Phase:** Phase 2 (Profile Page)
-**Last completed:** 04 Database Schema and 06 Profile Save Logic
-**Next:** 07 AI Profile Extraction from Resume and 08 Resume PDF Generation from Profile
+**Last completed:** 07 AI Profile Extraction from Resume
+**Next:** 08 Resume PDF Generation from Profile
 
 ---
 
@@ -25,7 +25,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 - [x] 05 Profile Page: Full UI
 - [x] 06 Profile Save Logic
-- [ ] 07 AI Profile Extraction from Resume
+- [x] 07 AI Profile Extraction from Resume
 - [ ] 08 Resume PDF Generation from Profile
 
 ### Phase 3: Find Jobs Page
@@ -53,7 +53,7 @@ Update this file after every completed feature. Any AI agent reading this should
 * PostHog setup: Configured through the PostHog wizard with client tracking in `instrumentation-client.ts`, server side event logging in `instrumentation.ts` using OpenTelemetry, and user identification on login, dashboard load, and sign out.
 * Profile Page and basic user information: Built [app/profile/page.tsx](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/app/profile/page.tsx) as an authenticated server component that fetches user data from `insforge.auth.getCurrentUser()`. Pre-fills full name and keeps email read only.
 * Navigation indicator: Added route awareness to [components/layout/Navbar.tsx](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/components/layout/Navbar.tsx) using `usePathname()` so active tabs receive accent styling.
-* Design system adherence: Built `CompletionIndicator`, `ResumeUpload`, and `ProfileForm` following colors and spacing tokens strictly without hardcoded hex values or raw Tailwind colors.
+* AI Resume Extraction: Implemented `POST /api/resume/extract` leveraging `unpdf` (worker-free PDF.js) and OpenAI `gpt-4o` with structured JSON schema. Built `ProfileContent` to coordinate extraction output, update form state in the browser before manual save, preserve read only session email, and provide interactive toast notifications.
 
 ---
 

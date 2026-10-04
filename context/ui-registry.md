@@ -60,7 +60,11 @@ After building any component — update this file with the component name, file 
 
 ### ResumeUpload
 - **File**: `components/profile/ResumeUpload.tsx`
-- **Classes**: `bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs`, dashed dropzone: `border-2 border-dashed rounded-xl p-8 text-center`, `bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-medium px-4 py-2 rounded-lg`, active pill: `text-[11px] font-semibold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded uppercase tracking-wider`
+- **Classes**: `bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs`, dashed dropzone: `border-2 border-dashed rounded-xl p-8 text-center`, `bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-medium px-4 py-2 rounded-lg`, active pill: `text-[11px] font-semibold text-success bg-success/10 border border-success/20 px-2 py-0.5 rounded uppercase tracking-wider`, extract button: `inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer`
+
+### ProfileContent
+- **File**: `components/profile/ProfileContent.tsx`
+- **Classes**: Client state coordinator managing `CompletionIndicator`, `ResumeUpload`, and `ProfileForm` for live form state updates, AI extraction propagation, and real-time completeness percentage calculation.
 
 ### ProfileForm
 - **File**: `components/profile/ProfileForm.tsx`

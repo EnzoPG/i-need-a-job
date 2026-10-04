@@ -39,12 +39,20 @@ export type ProfileData = {
 
 type Props = {
   initialData?: Partial<ProfileData>;
+  formData?: ProfileData;
+  setFormData?: React.Dispatch<React.SetStateAction<ProfileData>>;
   onSave?: (data: ProfileData) => Promise<void> | void;
   className?: string;
 };
 
-export function ProfileForm({ initialData = {}, onSave, className = "" }: Props) {
-  const [formData, setFormData] = useState<ProfileData>({
+export function ProfileForm({
+  initialData = {},
+  formData: externalFormData,
+  setFormData: externalSetFormData,
+  onSave,
+  className = "",
+}: Props) {
+  const [internalFormData, setInternalFormData] = useState<ProfileData>(() => ({
     fullName: initialData.fullName ?? "Faizan Ali",
     email: initialData.email ?? "",
     phone: initialData.phone ?? "+1 (555) 000-0000",
@@ -81,7 +89,10 @@ export function ProfileForm({ initialData = {}, onSave, className = "" }: Props)
     remotePreference: initialData.remotePreference ?? "Any",
     salaryExpectation: initialData.salaryExpectation ?? "",
     preferredLocations: initialData.preferredLocations ?? "",
-  });
+  }));
+
+  const formData = externalFormData ?? internalFormData;
+  const setFormData = externalSetFormData ?? setInternalFormData;
 
   const { toast } = useToast();
   const [skillInput, setSkillInput] = useState("");

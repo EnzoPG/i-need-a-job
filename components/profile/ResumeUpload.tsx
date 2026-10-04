@@ -1,25 +1,38 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  UploadCloud,
+  FileText,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 import { uploadResumeAction } from "@/actions/profile";
 import { useToast } from "@/components/ui/Toast";
+import { insforge } from "@/lib/insforge-client";
+import type { ExtractedProfileData } from "@/app/api/resume/extract/route";
 
 type Props = {
   resumeUrl?: string | null;
   onFileSelect?: (file: File) => void;
+  onExtractComplete?: (data: ExtractedProfileData) => void;
   className?: string;
 };
 
 export function ResumeUpload({
   resumeUrl,
   onFileSelect,
+  onExtractComplete,
   className = "",
 }: Props) {
   const { toast } = useToast();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [currentResumeUrl, setCurrentResumeUrl] = useState<string | null>(
@@ -50,6 +63,7 @@ export function ResumeUpload({
       return;
     }
 
+    setCurrentFile(file);
     setSelectedFileName(file.name);
     setUploadError(null);
     setUploadSuccess(false);
@@ -88,7 +102,8 @@ export function ResumeUpload({
         toast({
           type: "success",
           title: "Resume uploaded",
-          message: "Your resume is now stored and active on your profile.",
+          message: "Your resume is stored. Click 'Extract from Resume' to autofill your profile fields.",
+          duration: 4000,
         });
         setTimeout(() => setUploadSuccess(false), 4000);
       }
@@ -103,6 +118,92 @@ export function ResumeUpload({
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleExtract = async () => {
+    let fileToExtract: Blob | File | null = currentFile;
+
+    setIsExtracting(true);
+    toast({
+      type: "info",
+      title: "Reading resume",
+      message: "OpenAI GPT-4o is extracting your profile details...",
+      duration: 3500,
+    });
+
+    try {
+      if (!fileToExtract && currentResumeUrl) {
+        const relativePath = currentResumeUrl.replace(/^resumes\//, "");
+        const { data: downloadedBlob, error: downloadError } =
+          await insforge.storage.from("resumes").download(relativePath);
+
+        if (downloadError || !downloadedBlob) {
+          toast({
+            type: "info",
+            title: "File not loaded",
+            message: "Please re-select your resume file to run AI extraction.",
+          });
+          setIsExtracting(false);
+          return;
+        }
+        fileToExtract = downloadedBlob;
+      }
+
+      if (!fileToExtract) {
+        toast({
+          type: "info",
+          title: "No file selected",
+          message: "Please select or upload a resume PDF first.",
+        });
+        setIsExtracting(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileToExtract, selectedFileName || "resume.pdf");
+
+      const response = await fetch("/api/resume/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        const errMessage =
+          result.error ||
+          "Could not extract text from this PDF. Please ensure it is text selectable.";
+        toast({
+          type: "error",
+          title: "Extraction failed",
+          message: errMessage,
+          duration: 5000,
+        });
+        return;
+      }
+
+      toast({
+        type: "success",
+        title: "Profile extracted",
+        message:
+          "Your profile fields have been populated. Review and edit before saving.",
+        duration: 4000,
+      });
+
+      if (onExtractComplete && result.data) {
+        onExtractComplete(result.data);
+      }
+    } catch (err) {
+      console.error("[ResumeUpload/handleExtract]", err);
+      toast({
+        type: "error",
+        title: "Extraction error",
+        message:
+          "An unexpected error occurred while processing the extraction request.",
+      });
+    } finally {
+      setIsExtracting(false);
     }
   };
 
@@ -131,14 +232,41 @@ export function ResumeUpload({
     }
   };
 
+  const hasResume = Boolean(currentFile || currentResumeUrl);
+
   return (
-    <div className={`bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs ${className}`}>
-      <div className="mb-4">
-        <h2 className="text-base font-semibold text-text-primary">Resume</h2>
-        <p className="mt-1 text-xs text-text-secondary">
-          Upload an existing resume to auto-fill the profile, or generate a new
-          tailored one from your details below.
-        </p>
+    <div
+      className={`bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs ${className}`}
+    >
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-text-primary">Resume</h2>
+          <p className="mt-1 text-xs text-text-secondary">
+            Upload an existing resume to auto-fill the profile, or generate a new
+            tailored one from your details below.
+          </p>
+        </div>
+
+        {hasResume && (
+          <button
+            type="button"
+            disabled={isExtracting || isUploading}
+            onClick={handleExtract}
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 self-start sm:self-auto"
+          >
+            {isExtracting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Extracting...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Extract from Resume</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {uploadSuccess && (
@@ -217,14 +345,37 @@ export function ResumeUpload({
           id="resume-upload-input"
         />
 
-        <button
-          type="button"
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-surface hover:bg-surface-secondary border border-border text-text-primary text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isUploading ? "Uploading..." : "Select Resume"}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-surface hover:bg-surface-secondary border border-border text-text-primary text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUploading ? "Uploading..." : "Select Resume"}
+          </button>
+
+          {hasResume && (
+            <button
+              type="button"
+              disabled={isExtracting || isUploading}
+              onClick={handleExtract}
+              className="bg-surface hover:bg-surface-secondary border border-accent/40 text-accent text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Extracting...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Extract from Resume</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Action Row below dropzone */}
