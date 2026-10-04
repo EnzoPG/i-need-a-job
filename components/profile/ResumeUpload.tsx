@@ -18,6 +18,8 @@ type Props = {
   resumeUrl?: string | null;
   onFileSelect?: (file: File) => void;
   onExtractComplete?: (data: ExtractedProfileData) => void;
+  onGenerateComplete?: (resumeUrl: string) => void;
+  isDirty?: boolean;
   className?: string;
 };
 
@@ -25,6 +27,8 @@ export function ResumeUpload({
   resumeUrl,
   onFileSelect,
   onExtractComplete,
+  onGenerateComplete,
+  isDirty = false,
   className = "",
 }: Props) {
   const { toast } = useToast();
@@ -33,6 +37,7 @@ export function ResumeUpload({
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [currentResumeUrl, setCurrentResumeUrl] = useState<string | null>(
@@ -204,6 +209,70 @@ export function ResumeUpload({
       });
     } finally {
       setIsExtracting(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (isDirty) {
+      toast({
+        type: "info",
+        title: "Unsaved changes detected",
+        message: "Please save your profile changes before generating your resume.",
+        duration: 4500,
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    toast({
+      type: "info",
+      title: "Generating resume",
+      message: "OpenAI GPT-4o is polishing your career content and compiling your PDF...",
+      duration: 4000,
+    });
+
+    try {
+      const res = await fetch("/api/resume/generate", {
+        method: "POST",
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        const err = result.error || "Failed to generate resume";
+        toast({
+          type: "error",
+          title: "Generation failed",
+          message: err,
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (result.resumeUrl) {
+        setCurrentResumeUrl(result.resumeUrl);
+        setSelectedFileName("Generated Resume.pdf");
+        if (onGenerateComplete) {
+          onGenerateComplete(result.resumeUrl);
+        }
+      }
+
+      toast({
+        type: "success",
+        title: "Resume generated",
+        message: "Your new professional resume has been created and saved to your profile.",
+        duration: 4000,
+      });
+    } catch (err) {
+      console.error("[ResumeUpload/handleGenerate]", err);
+      toast({
+        type: "error",
+        title: "Generation error",
+        message: "An unexpected error occurred while generating your resume.",
+        duration: 4000,
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -386,10 +455,21 @@ export function ResumeUpload({
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-medium px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+          disabled={isGenerating || isUploading || isExtracting}
+          onClick={handleGenerate}
+          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
-          <FileText className="w-4 h-4" />
-          <span>Generate Resume from Profile</span>
+          {isGenerating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Generating Resume...</span>
+            </>
+          ) : (
+            <>
+              <FileText className="w-4 h-4" />
+              <span>Generate Resume from Profile</span>
+            </>
+          )}
         </button>
       </div>
     </div>

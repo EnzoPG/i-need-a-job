@@ -58,7 +58,8 @@ next-env.d.ts
 .env.local
 
 docs/
+context/*-developer.md
+
 # Explicitly track docker-compose configuration
 !docker-compose.yml
 !docker-compose*.yml
-

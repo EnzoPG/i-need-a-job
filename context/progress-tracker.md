@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 2 (Profile Page)
-**Last completed:** 07 AI Profile Extraction from Resume
-**Next:** 08 Resume PDF Generation from Profile
+**Phase:** Phase 3 (Find Jobs Page)
+**Last completed:** 08 Resume PDF Generation from Profile
+**Next:** 09 Find Jobs Page: Full UI
 
 ---
 
@@ -26,7 +26,7 @@ Update this file after every completed feature. Any AI agent reading this should
 - [x] 05 Profile Page: Full UI
 - [x] 06 Profile Save Logic
 - [x] 07 AI Profile Extraction from Resume
-- [ ] 08 Resume PDF Generation from Profile
+- [x] 08 Resume PDF Generation from Profile
 
 ### Phase 3: Find Jobs Page
 
@@ -54,6 +54,9 @@ Update this file after every completed feature. Any AI agent reading this should
 * Profile Page and basic user information: Built [app/profile/page.tsx](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/app/profile/page.tsx) as an authenticated server component that fetches user data from `insforge.auth.getCurrentUser()`. Pre-fills full name and keeps email read only.
 * Navigation indicator: Added route awareness to [components/layout/Navbar.tsx](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/components/layout/Navbar.tsx) using `usePathname()` so active tabs receive accent styling.
 * AI Resume Extraction: Implemented `POST /api/resume/extract` leveraging `unpdf` (worker-free PDF.js) and OpenAI `gpt-4o` with structured JSON schema. Built `ProfileContent` to coordinate extraction output, update form state in the browser before manual save, preserve read only session email, and provide interactive toast notifications.
+* Profile State Architecture: Lifted form state to `ProfileContent` and eliminated synchronous `useEffect` calls, avoiding cascading renders and deriving completion metrics directly on render.
+* Docker & Next.js Runtime: Standardized dependencies on Next.js 16.3.8 and ESLint 9, replacing worker-dependent PDF tools with `unpdf` to run cleanly across Turbopack and Docker containers.
+* Resume PDF Generation: Built server side resume generation pipeline at `POST /api/resume/generate` using OpenAI `gpt-4o` to polish career content and `@react-pdf/renderer` to compile a single page A4 vector PDF directly to InsForge Storage, linking `resume_pdf_url` on the candidate profile and providing real time UI state feedback.
 
 ---
 
