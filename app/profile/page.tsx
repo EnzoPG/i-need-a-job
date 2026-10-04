@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import { createInsforgeServer } from "@/lib/insforge-server";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { CompletionIndicator } from "@/components/profile/CompletionIndicator";
-import { ResumeUpload } from "@/components/profile/ResumeUpload";
-import { ProfileForm, type ProfileData } from "@/components/profile/ProfileForm";
+import { ProfileContent } from "@/components/profile/ProfileContent";
+import type { ProfileData } from "@/components/profile/ProfileForm";
 import { computeProfileCompleteness } from "@/lib/profile-utils";
 
 export default async function ProfilePage() {
@@ -92,14 +91,12 @@ export default async function ProfilePage() {
       <Navbar showSignOut />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
-        <CompletionIndicator
-          completionPercentage={completionPercentage}
-          missingFields={missingFields}
+        <ProfileContent
+          initialData={initialData}
+          initialEmail={initialEmail}
+          resumeUrl={resumeUrl}
+          initialCompleteness={{ completionPercentage, missingFields }}
         />
-
-        <ResumeUpload resumeUrl={resumeUrl} />
-
-        <ProfileForm initialData={initialData} />
       </main>
 
       <Footer />
