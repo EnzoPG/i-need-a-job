@@ -67,10 +67,24 @@ export function ProfileContent({
     preferredLocations: initialData.preferredLocations ?? "",
   }));
 
+  const [savedData, setSavedData] = useState<ProfileData>(() => formData);
+  const [activeResumeUrl, setActiveResumeUrl] = useState<string | null>(resumeUrl);
+
+  const isDirty = JSON.stringify(formData) !== JSON.stringify(savedData);
+
   const { completionPercentage, missingFields } = computeProfileCompleteness(
     formData,
     initialEmail
   );
+
+  const handleSave = async (data: ProfileData) => {
+    const { saveProfileAction } = await import("@/actions/profile");
+    const result = await saveProfileAction(data);
+    if (!result.success) {
+      throw new Error(result.error || "Failed to save profile");
+    }
+    setSavedData(data);
+  };
 
   const handleExtractComplete = (extracted: ExtractedProfileData) => {
     setFormData((prev) => ({
@@ -117,13 +131,16 @@ export function ProfileContent({
       />
 
       <ResumeUpload
-        resumeUrl={resumeUrl}
+        resumeUrl={activeResumeUrl}
+        isDirty={isDirty}
         onExtractComplete={handleExtractComplete}
+        onGenerateComplete={(newUrl) => setActiveResumeUrl(newUrl)}
       />
 
       <ProfileForm
         formData={formData}
         setFormData={setFormData}
+        onSave={handleSave}
       />
     </>
   );
