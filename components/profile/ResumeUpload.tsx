@@ -12,7 +12,8 @@ import {
 import { uploadResumeAction } from "@/actions/profile";
 import { useToast } from "@/components/ui/Toast";
 import { insforge } from "@/lib/insforge-client";
-import type { ExtractedProfileData } from "@/app/api/resume/extract/route";
+import type { ExtractedProfileData } from "@/types/resume";
+import { validatePdfFile } from "@/lib/validation/file";
 
 type Props = {
   resumeUrl?: string | null;
@@ -46,23 +47,18 @@ export function ResumeUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = async (file: File) => {
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      const err = "Only PDF files are supported";
-      setUploadError(err);
-      toast({
-        type: "error",
-        title: "Invalid file format",
-        message: err,
-      });
-      return;
-    }
+    const validation = validatePdfFile({
+      size: file.size,
+      type: file.type,
+      name: file.name,
+    });
 
-    if (file.size > 5 * 1024 * 1024) {
-      const err = "File size exceeds 5MB limit";
+    if (!validation.valid) {
+      const err = validation.error || "Invalid file";
       setUploadError(err);
       toast({
         type: "error",
-        title: "File too large",
+        title: "File validation failed",
         message: err,
       });
       return;

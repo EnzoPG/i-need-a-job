@@ -8,28 +8,9 @@ import {
   Link,
 } from "@react-pdf/renderer";
 
-export type PolishedResumeData = {
-  fullName: string;
-  email: string;
-  phone?: string | null;
-  location?: string | null;
-  linkedinUrl?: string | null;
-  portfolioUrl?: string | null;
-  currentTitle?: string | null;
-  summary: string;
-  experience: Array<{
-    company: string;
-    title: string;
-    period: string;
-    bullets: string[];
-  }>;
-  skills: string[];
-  education: Array<{
-    degree: string;
-    institution: string;
-    year?: string | null;
-  }>;
-};
+import type { PolishedResumeData } from "@/types/resume";
+
+export type { PolishedResumeData };
 
 const styles = StyleSheet.create({
   page: {
