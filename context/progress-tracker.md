@@ -57,6 +57,7 @@ Update this file after every completed feature. Any AI agent reading this should
 * Profile State Architecture: Lifted form state to `ProfileContent` and eliminated synchronous `useEffect` calls, avoiding cascading renders and deriving completion metrics directly on render.
 * Docker & Next.js Runtime: Standardized dependencies on Next.js 16.3.8 and ESLint 9, replacing worker-dependent PDF tools with `unpdf` to run cleanly across Turbopack and Docker containers.
 * Resume PDF Generation: Built server side resume generation pipeline at `POST /api/resume/generate` using OpenAI `gpt-4o` to polish career content and `@react-pdf/renderer` to compile a single page A4 vector PDF directly to InsForge Storage, linking `resume_pdf_url` on the candidate profile and providing real time UI state feedback.
+* Clean Architecture and SOLID Refactor: Decoupled UI presentation from server actions and utilities by creating dedicated domain contracts in `types/` (`profile.ts`, `resume.ts`, `database.ts`). Centralized database mapping into `lib/mappers/profile.ts` and unified PDF validation in `lib/validation/file.ts`. Decomposed monolithic `ProfileForm.tsx` from 785 lines into focused section subcomponents and extracted the reusable `TagInput` component, completely removing inverted dependencies.
 
 ---
 

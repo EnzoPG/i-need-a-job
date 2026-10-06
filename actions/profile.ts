@@ -2,22 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createInsforgeServer } from "@/lib/insforge-server";
-import type { ProfileData } from "@/components/profile/ProfileForm";
-
-export type SaveProfileResult = {
-  success: boolean;
-  completionPercentage?: number;
-  missingFields?: string[];
-  error?: string;
-};
-
-export type UploadResumeResult = {
-  success: boolean;
-  resumeUrl?: string;
-  error?: string;
-};
-
+import type { ProfileData, SaveProfileResult } from "@/types/profile";
+import type { UploadResumeResult } from "@/types/resume";
 import { computeProfileCompleteness } from "@/lib/profile-utils";
+import { profileDomainToRow } from "@/lib/mappers/profile";
+import { validatePdfFile } from "@/lib/validation/file";
 
 export async function saveProfileAction(
   data: ProfileData
@@ -40,59 +29,7 @@ export async function saveProfileAction(
     const { completionPercentage, missingFields, isComplete } =
       computeProfileCompleteness(data, email);
 
-    const jobTitlesArray =
-      typeof data.jobTitlesSeeking === "string"
-        ? data.jobTitlesSeeking
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : Array.isArray(data.jobTitlesSeeking)
-          ? data.jobTitlesSeeking
-          : [];
-
-    const preferredLocationsArray =
-      typeof data.preferredLocations === "string"
-        ? data.preferredLocations
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : Array.isArray(data.preferredLocations)
-          ? data.preferredLocations
-          : [];
-
-    const yearsExp = parseInt(data.yearsExperience, 10);
-
-    const payload = {
-      id: user.id,
-      email,
-      full_name: data.fullName?.trim() || null,
-      phone: data.phone?.trim() || null,
-      location: data.location?.trim() || null,
-      current_title: data.currentTitle?.trim() || null,
-      experience_level: data.experienceLevel?.toLowerCase() || "junior",
-      years_experience: isNaN(yearsExp) ? 0 : yearsExp,
-      skills: Array.isArray(data.skills) ? data.skills : [],
-      industries: Array.isArray(data.industries) ? data.industries : [],
-      work_experience: Array.isArray(data.workExperience)
-        ? data.workExperience
-        : [],
-      education: {
-        highestDegree: data.highestDegree || null,
-        fieldOfStudy: data.fieldOfStudy || null,
-        institutionName: data.institutionName || null,
-        graduationYear: data.graduationYear || null,
-      },
-      job_titles_seeking: jobTitlesArray,
-      remote_preference: data.remotePreference?.toLowerCase() || "any",
-      preferred_locations: preferredLocationsArray,
-      salary_expectation: data.salaryExpectation?.trim() || null,
-      cover_letter_tone: "enthusiastic",
-      linkedin_url: data.linkedinUrl?.trim() || null,
-      portfolio_url: data.portfolioUrl?.trim() || null,
-      work_authorization: data.workAuthorization?.toLowerCase() || "citizen",
-      is_complete: isComplete,
-      updated_at: new Date().toISOString(),
-    };
+    const payload = profileDomainToRow(data, user.id, email, isComplete);
 
     const { error: dbError } = await insforge.database
       .from("profiles")
@@ -128,25 +65,23 @@ export async function uploadResumeAction(
   try {
     const file = formData.get("file");
 
-    if (!file || !(file instanceof Blob) || file.size === 0) {
+    if (!file || !(file instanceof Blob)) {
       return { success: false, error: "Please select a valid file to upload" };
     }
 
     const fileName =
       "name" in file ? (file as { name: string }).name : "resume.pdf";
-    const isPdf =
-      file.type === "application/pdf" ||
-      fileName.toLowerCase().endsWith(".pdf");
 
-    if (!isPdf) {
-      return { success: false, error: "Only PDF files are supported" };
-    }
+    const validation = validatePdfFile({
+      size: file.size,
+      type: file.type,
+      name: fileName,
+    });
 
-    const maxSizeBytes = 5 * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
+    if (!validation.valid) {
       return {
         success: false,
-        error: "File size exceeds the 5MB maximum limit",
+        error: validation.error || "Invalid file format or size",
       };
     }
 

@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { PolishedResumeData } from "@/lib/pdf/ResumeDocument";
+import type { PolishedResumeData } from "@/types/resume";
 
 export type RawProfileInput = {
   fullName: string;

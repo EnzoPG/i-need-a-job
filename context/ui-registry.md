@@ -77,5 +77,10 @@ After building any component — update this file with the component name, file 
 ### Toast
 - **File**: `components/ui/Toast.tsx`
 - **Classes**: container: `fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none`, toast card: `pointer-events-auto bg-surface border border-border rounded-xl p-4 shadow-md flex items-start gap-3 transition-all`, title: `text-sm font-semibold text-text-primary leading-tight`, message: `text-xs text-text-secondary mt-1 leading-relaxed`, dismiss: `text-text-muted hover:text-text-primary transition-colors cursor-pointer`
+### TagInput
+* **File**: `components/profile/TagInput.tsx`
+* **Classes**: container `flex flex-wrap gap-2`, input `flex-1 bg-surface border border-border rounded-lg px-3.5 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent`, button `bg-surface hover:bg-surface-secondary border border-border text-text-primary text-xs font-medium px-4 py-2 rounded-lg`, tag chip `bg-surface-secondary border border-border text-text-primary text-xs font-medium px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs`
 
-
+### ProfileForm Sections
+* **Files**: `components/profile/sections/PersonalInfoSection.tsx`, `components/profile/sections/ProfessionalInfoSection.tsx`, `components/profile/sections/WorkExperienceSection.tsx`, `components/profile/sections/EducationSection.tsx`, `components/profile/sections/JobPreferencesSection.tsx`
+* **Classes**: section wrapper `mb-8 pt-6 border-t border-border`, section title `text-sm font-semibold text-text-primary mb-4`, role card `border border-border rounded-xl p-5 sm:p-6 bg-surface space-y-4`
