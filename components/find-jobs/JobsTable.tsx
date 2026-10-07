@@ -56,7 +56,14 @@ export function JobsTable({ jobs }: Props) {
           <tbody className="divide-y divide-border">
             {jobs.map((job) => {
               const scoreFill = getScoreColorClass(job.match_score);
-              const dateText = job.displayDate || "Recently";
+              const dateText =
+                job.displayDate ||
+                (job.found_at
+                  ? new Date(job.found_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "Recently");
 
               return (
                 <tr
