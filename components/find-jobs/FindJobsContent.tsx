@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import posthog from "posthog-js";
 import { SearchControls } from "./SearchControls";
 import { JobFilters, type MatchFilterOption, type SortOption } from "./JobFilters";
 import { JobsTable } from "./JobsTable";
 import { JobsPagination } from "./JobsPagination";
 import { MOCK_JOBS, type MockJob } from "@/lib/mock-jobs";
+import type { JobRow } from "@/types/database";
 
 const PAGE_SIZE = 6;
 const HIGH_MATCH_THRESHOLD = 70;
@@ -16,20 +18,90 @@ export function FindJobsContent() {
   const [bannerMessage, setBannerMessage] = useState<string | null>(
     "Found 8 jobs and saved 4 strong matches."
   );
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [jobs, setJobs] = useState<MockJob[]>(MOCK_JOBS);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [matchFilter, setMatchFilter] = useState<MatchFilterOption>("all");
   const [sortOption, setSortOption] = useState<SortOption>("match-score");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const handleSearchTrigger = () => {
-    // In this mock UI phase, show feedback confirming search criteria
-    setBannerMessage(`Found ${MOCK_JOBS.length} jobs for ${jobTitle || "all roles"}.`);
-    setCurrentPage(1);
+  const handleSearchTrigger = async () => {
+    if (!jobTitle.trim() || isLoading) return;
+
+    setIsLoading(true);
+    setIsError(false);
+    setBannerMessage(null);
+
+    try {
+      posthog.capture("job_search_started", {
+        job_title: jobTitle.trim(),
+        location: location.trim() || "Any",
+      });
+    } catch {
+      // Non-blocking telemetry
+    }
+
+    try {
+      const res = await fetch("/api/agent/find", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          jobTitle: jobTitle.trim(),
+          location: location.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setIsError(true);
+        setBannerMessage(
+          data.error || "Failed to search for jobs. Please verify your connection or try again."
+        );
+        return;
+      }
+
+      setIsError(false);
+      setBannerMessage(data.message || `Discovered ${data.jobsFound || 0} jobs.`);
+
+      if (Array.isArray(data.jobs) && data.jobs.length > 0) {
+        const receivedJobs: MockJob[] = (data.jobs as JobRow[]).map((job) => ({
+          ...job,
+          displayDate: "Today",
+        }));
+        setJobs(receivedJobs);
+
+        // Track found jobs in client PostHog
+        for (const j of receivedJobs) {
+          try {
+            posthog.capture("job_found", {
+              job_id: j.id,
+              title: j.title,
+              company: j.company,
+              match_score: j.match_score,
+            });
+          } catch {
+            // Ignore telemetry exceptions
+          }
+        }
+      }
+
+      setCurrentPage(1);
+    } catch (err) {
+      console.error("[FindJobsContent/handleSearchTrigger] Search error:", err);
+      setIsError(true);
+      setBannerMessage("Network error during job discovery. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filteredJobs = useMemo(() => {
-    let result: MockJob[] = [...MOCK_JOBS];
+    let result: MockJob[] = [...jobs];
 
     // Filter by keyword (company or role)
     if (searchQuery.trim()) {
@@ -63,7 +135,7 @@ export function FindJobsContent() {
     });
 
     return result;
-  }, [searchQuery, matchFilter, sortOption]);
+  }, [jobs, searchQuery, matchFilter, sortOption]);
 
   const totalResults = filteredJobs.length;
   const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
@@ -97,6 +169,8 @@ export function FindJobsContent() {
         onLocationChange={setLocation}
         onSearch={handleSearchTrigger}
         bannerMessage={bannerMessage}
+        isLoading={isLoading}
+        isError={isError}
       />
 
       {/* 2. Filter Bar Card */}
