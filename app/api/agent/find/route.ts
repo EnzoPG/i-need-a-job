@@ -41,17 +41,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check credentials early to fail fast with informative status
-    if (!process.env.ADZUNA_APP_ID || !process.env.ADZUNA_APP_KEY) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "Adzuna API credentials (ADZUNA_APP_ID, ADZUNA_APP_KEY) are not configured on the server.",
-        },
-        { status: 503 }
-      );
-    }
+    const isLiveConfigured = Boolean(
+      process.env.ADZUNA_APP_ID?.trim() && process.env.ADZUNA_APP_KEY?.trim()
+    );
 
     // Fetch candidate profile for AI match scoring
     const { data: profile } = await insforge.database
@@ -257,7 +249,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const bannerMessage = `Found ${resultJobs.length} jobs and saved ${strongMatches} strong matches.`;
+    const bannerMessage = isLiveConfigured
+      ? `Found ${resultJobs.length} jobs and saved ${strongMatches} strong matches.`
+      : `Found ${resultJobs.length} jobs and saved ${strongMatches} strong matches (Demo mode: set ADZUNA_APP_ID for live API).`;
 
     return NextResponse.json({
       success: true,
