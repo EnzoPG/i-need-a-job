@@ -104,7 +104,7 @@ export function SearchControls({
           <div
             className={`mt-2 rounded-xl px-4 py-3 flex items-center gap-2.5 ${
               isError
-                ? "bg-error-lightest border border-error/20 text-error-foreground"
+                ? "bg-error-lightest border border-error/20 text-error-dark"
                 : "bg-success-lightest border border-success/20 text-success-foreground"
             }`}
           >
