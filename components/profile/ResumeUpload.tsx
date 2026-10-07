@@ -1,25 +1,44 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  UploadCloud,
+  FileText,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 import { uploadResumeAction } from "@/actions/profile";
 import { useToast } from "@/components/ui/Toast";
+import { insforge } from "@/lib/insforge-client";
+import type { ExtractedProfileData } from "@/types/resume";
+import { validatePdfFile } from "@/lib/validation/file";
 
 type Props = {
   resumeUrl?: string | null;
   onFileSelect?: (file: File) => void;
+  onExtractComplete?: (data: ExtractedProfileData) => void;
+  onGenerateComplete?: (resumeUrl: string) => void;
+  isDirty?: boolean;
   className?: string;
 };
 
 export function ResumeUpload({
   resumeUrl,
   onFileSelect,
+  onExtractComplete,
+  onGenerateComplete,
+  isDirty = false,
   className = "",
 }: Props) {
   const { toast } = useToast();
   const [dragActive, setDragActive] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [currentResumeUrl, setCurrentResumeUrl] = useState<string | null>(
@@ -28,28 +47,24 @@ export function ResumeUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const processFile = async (file: File) => {
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      const err = "Only PDF files are supported";
+    const validation = validatePdfFile({
+      size: file.size,
+      type: file.type,
+      name: file.name,
+    });
+
+    if (!validation.valid) {
+      const err = validation.error || "Invalid file";
       setUploadError(err);
       toast({
         type: "error",
-        title: "Invalid file format",
+        title: "File validation failed",
         message: err,
       });
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      const err = "File size exceeds 5MB limit";
-      setUploadError(err);
-      toast({
-        type: "error",
-        title: "File too large",
-        message: err,
-      });
-      return;
-    }
-
+    setCurrentFile(file);
     setSelectedFileName(file.name);
     setUploadError(null);
     setUploadSuccess(false);
@@ -88,7 +103,8 @@ export function ResumeUpload({
         toast({
           type: "success",
           title: "Resume uploaded",
-          message: "Your resume is now stored and active on your profile.",
+          message: "Your resume is stored. Click 'Extract from Resume' to autofill your profile fields.",
+          duration: 4000,
         });
         setTimeout(() => setUploadSuccess(false), 4000);
       }
@@ -103,6 +119,156 @@ export function ResumeUpload({
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleExtract = async () => {
+    let fileToExtract: Blob | File | null = currentFile;
+
+    setIsExtracting(true);
+    toast({
+      type: "info",
+      title: "Reading resume",
+      message: "OpenAI GPT-4o is extracting your profile details...",
+      duration: 3500,
+    });
+
+    try {
+      if (!fileToExtract && currentResumeUrl) {
+        const relativePath = currentResumeUrl.replace(/^resumes\//, "");
+        const { data: downloadedBlob, error: downloadError } =
+          await insforge.storage.from("resumes").download(relativePath);
+
+        if (downloadError || !downloadedBlob) {
+          toast({
+            type: "info",
+            title: "File not loaded",
+            message: "Please re-select your resume file to run AI extraction.",
+          });
+          setIsExtracting(false);
+          return;
+        }
+        fileToExtract = downloadedBlob;
+      }
+
+      if (!fileToExtract) {
+        toast({
+          type: "info",
+          title: "No file selected",
+          message: "Please select or upload a resume PDF first.",
+        });
+        setIsExtracting(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileToExtract, selectedFileName || "resume.pdf");
+
+      const response = await fetch("/api/resume/extract", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        const errMessage =
+          result.error ||
+          "Could not extract text from this PDF. Please ensure it is text selectable.";
+        toast({
+          type: "error",
+          title: "Extraction failed",
+          message: errMessage,
+          duration: 5000,
+        });
+        return;
+      }
+
+      toast({
+        type: "success",
+        title: "Profile extracted",
+        message:
+          "Your profile fields have been populated. Review and edit before saving.",
+        duration: 4000,
+      });
+
+      if (onExtractComplete && result.data) {
+        onExtractComplete(result.data);
+      }
+    } catch (err) {
+      console.error("[ResumeUpload/handleExtract]", err);
+      toast({
+        type: "error",
+        title: "Extraction error",
+        message:
+          "An unexpected error occurred while processing the extraction request.",
+      });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (isDirty) {
+      toast({
+        type: "info",
+        title: "Unsaved changes detected",
+        message: "Please save your profile changes before generating your resume.",
+        duration: 4500,
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    toast({
+      type: "info",
+      title: "Generating resume",
+      message: "OpenAI GPT-4o is polishing your career content and compiling your PDF...",
+      duration: 4000,
+    });
+
+    try {
+      const res = await fetch("/api/resume/generate", {
+        method: "POST",
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        const err = result.error || "Failed to generate resume";
+        toast({
+          type: "error",
+          title: "Generation failed",
+          message: err,
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (result.resumeUrl) {
+        setCurrentResumeUrl(result.resumeUrl);
+        setSelectedFileName("Generated Resume.pdf");
+        if (onGenerateComplete) {
+          onGenerateComplete(result.resumeUrl);
+        }
+      }
+
+      toast({
+        type: "success",
+        title: "Resume generated",
+        message: "Your new professional resume has been created and saved to your profile.",
+        duration: 4000,
+      });
+    } catch (err) {
+      console.error("[ResumeUpload/handleGenerate]", err);
+      toast({
+        type: "error",
+        title: "Generation error",
+        message: "An unexpected error occurred while generating your resume.",
+        duration: 4000,
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -131,14 +297,41 @@ export function ResumeUpload({
     }
   };
 
+  const hasResume = Boolean(currentFile || currentResumeUrl);
+
   return (
-    <div className={`bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs ${className}`}>
-      <div className="mb-4">
-        <h2 className="text-base font-semibold text-text-primary">Resume</h2>
-        <p className="mt-1 text-xs text-text-secondary">
-          Upload an existing resume to auto-fill the profile, or generate a new
-          tailored one from your details below.
-        </p>
+    <div
+      className={`bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs ${className}`}
+    >
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-text-primary">Resume</h2>
+          <p className="mt-1 text-xs text-text-secondary">
+            Upload an existing resume to auto-fill the profile, or generate a new
+            tailored one from your details below.
+          </p>
+        </div>
+
+        {hasResume && (
+          <button
+            type="button"
+            disabled={isExtracting || isUploading}
+            onClick={handleExtract}
+            className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 self-start sm:self-auto"
+          >
+            {isExtracting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Extracting...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Extract from Resume</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {uploadSuccess && (
@@ -217,14 +410,37 @@ export function ResumeUpload({
           id="resume-upload-input"
         />
 
-        <button
-          type="button"
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-surface hover:bg-surface-secondary border border-border text-text-primary text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isUploading ? "Uploading..." : "Select Resume"}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-surface hover:bg-surface-secondary border border-border text-text-primary text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isUploading ? "Uploading..." : "Select Resume"}
+          </button>
+
+          {hasResume && (
+            <button
+              type="button"
+              disabled={isExtracting || isUploading}
+              onClick={handleExtract}
+              className="bg-surface hover:bg-surface-secondary border border-accent/40 text-accent text-xs font-medium px-4 py-2 rounded-md shadow-xs cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Extracting...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Extract from Resume</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Action Row below dropzone */}
@@ -235,10 +451,21 @@ export function ResumeUpload({
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-medium px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+          disabled={isGenerating || isUploading || isExtracting}
+          onClick={handleGenerate}
+          className="inline-flex items-center gap-2 bg-accent hover:bg-accent-dark text-accent-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
         >
-          <FileText className="w-4 h-4" />
-          <span>Generate Resume from Profile</span>
+          {isGenerating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Generating Resume...</span>
+            </>
+          ) : (
+            <>
+              <FileText className="w-4 h-4" />
+              <span>Generate Resume from Profile</span>
+            </>
+          )}
         </button>
       </div>
     </div>
