@@ -1,54 +1,111 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Building2 } from "lucide-react";
-import type { MockJob } from "@/lib/mock-jobs";
+import { Building2, FilterX, RotateCcw } from "lucide-react";
+import { formatRelativeTime } from "@/lib/utils";
+import type { JobRow } from "@/types/database";
 
 type Props = {
-  jobs: MockJob[];
+  jobs: JobRow[];
+  isPending?: boolean;
+  totalUserJobsCount: number;
+  onClearFilters: () => void;
 };
 
 function getScoreColorClass(score: number): string {
-  if (score >= 90) return "bg-success";
-  if (score >= 80) return "bg-info-medium";
-  if (score >= 60) return "bg-warning";
-  return "bg-text-muted";
+  if (score >= 80) return "bg-success";
+  if (score >= 60) return "bg-info-medium";
+  return "bg-warning";
 }
 
-export function JobsTable({ jobs }: Props) {
+export function JobsTable({
+  jobs,
+  isPending = false,
+  totalUserJobsCount,
+  onClearFilters,
+}: Props) {
   const router = useRouter();
 
   if (jobs.length === 0) {
+    // Initial empty state: User has not searched for or discovered any jobs yet
+    if (totalUserJobsCount === 0) {
+      return (
+        <div className="w-full bg-surface border border-border rounded-2xl p-12 text-center shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-accent-muted border border-border flex items-center justify-center text-accent mx-auto mb-3">
+            <Building2 className="w-6 h-6" aria-hidden="true" />
+          </div>
+          <h3 className="text-base font-semibold text-text-primary mb-1">
+            No jobs discovered yet
+          </h3>
+          <p className="text-sm text-text-secondary max-w-md mx-auto">
+            Use the search controls above to search for tech positions by role and location. Our agent will discover vacancies and score them against your skills.
+          </p>
+        </div>
+      );
+    }
+
+    // Filtered empty state: User has saved jobs, but current filter combination returns zero matches
     return (
       <div className="w-full bg-surface border border-border rounded-2xl p-12 text-center shadow-xs">
-        <Building2 className="w-10 h-10 text-text-muted mx-auto mb-3" aria-hidden="true" />
-        <h3 className="text-base font-semibold text-text-primary mb-1">No jobs found</h3>
-        <p className="text-sm text-text-secondary max-w-sm mx-auto">
-          No job listings match your current filters. Try adjusting your search keyword or match tier.
+        <div className="w-12 h-12 rounded-xl bg-surface-secondary border border-border flex items-center justify-center text-text-secondary mx-auto mb-3">
+          <FilterX className="w-6 h-6" aria-hidden="true" />
+        </div>
+        <h3 className="text-base font-semibold text-text-primary mb-1">
+          No jobs match your filters
+        </h3>
+        <p className="text-sm text-text-secondary max-w-sm mx-auto mb-4">
+          No job listings match your current search keyword or match tier. Try broadening your criteria or reset filters.
         </p>
+        <button
+          type="button"
+          onClick={onClearFilters}
+          className="inline-flex items-center gap-2 bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer"
+        >
+          <RotateCcw className="w-4 h-4 text-text-secondary" aria-hidden="true" />
+          <span>Clear Filters</span>
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-surface border border-border rounded-2xl shadow-xs overflow-hidden">
+    <div
+      className={`w-full bg-surface border border-border rounded-2xl shadow-xs overflow-hidden transition-opacity duration-200 ${
+        isPending ? "opacity-60 pointer-events-none select-none" : "opacity-100"
+      }`}
+    >
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-border bg-surface">
-              <th scope="col" className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[24%]">
+              <th
+                scope="col"
+                className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[24%]"
+              >
                 COMPANY
               </th>
-              <th scope="col" className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[28%]">
+              <th
+                scope="col"
+                className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[28%]"
+              >
                 ROLE
               </th>
-              <th scope="col" className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[22%]">
+              <th
+                scope="col"
+                className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[22%]"
+              >
                 MATCH SCORE
               </th>
-              <th scope="col" className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[14%]">
+              <th
+                scope="col"
+                className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[14%]"
+              >
                 SALARY EST.
               </th>
-              <th scope="col" className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[12%]">
+              <th
+                scope="col"
+                className="py-3.5 px-6 text-xs font-semibold text-text-secondary tracking-wider uppercase w-[12%]"
+              >
                 DATE FOUND
               </th>
             </tr>
@@ -56,14 +113,7 @@ export function JobsTable({ jobs }: Props) {
           <tbody className="divide-y divide-border">
             {jobs.map((job) => {
               const scoreFill = getScoreColorClass(job.match_score);
-              const dateText =
-                job.displayDate ||
-                (job.found_at
-                  ? new Date(job.found_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "Recently");
+              const dateText = formatRelativeTime(job.found_at);
 
               return (
                 <tr
