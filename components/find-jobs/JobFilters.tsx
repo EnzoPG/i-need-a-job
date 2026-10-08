@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, RotateCcw } from "lucide-react";
+import type { MatchFilterOption, SortOption } from "@/lib/services/jobs";
 
-export type MatchFilterOption = "all" | "high" | "low";
-export type SortOption = "match-score" | "newest" | "oldest";
+export type { MatchFilterOption, SortOption };
 
 type Props = {
   searchQuery: string;
@@ -13,6 +13,9 @@ type Props = {
   onMatchFilterChange: (filter: MatchFilterOption) => void;
   sortOption: SortOption;
   onSortOptionChange: (sort: SortOption) => void;
+  onClearFilters: () => void;
+  isFiltered: boolean;
+  isPending?: boolean;
 };
 
 const MATCH_FILTER_LABELS: Record<MatchFilterOption, string> = {
@@ -33,7 +36,10 @@ export function JobFilters({
   matchFilter,
   onMatchFilterChange,
   sortOption,
-  onSortOptionChange
+  onSortOptionChange,
+  onClearFilters,
+  isFiltered,
+  isPending = false
 }: Props) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -69,8 +75,22 @@ export function JobFilters({
         />
       </div>
 
-      {/* Filter and Sort Dropdowns */}
-      <div className="flex items-center gap-3 shrink-0">
+      {/* Filter and Sort Dropdowns + Optional Reset */}
+      <div className="flex items-center gap-3 shrink-0 flex-wrap">
+        {/* Clear Filters Quick Action (visible when filters are active) */}
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            disabled={isPending}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary hover:text-text-primary px-2.5 py-1.5 rounded-lg border border-border bg-surface hover:bg-surface-secondary transition-colors cursor-pointer disabled:opacity-50"
+            title="Reset to default filters"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-text-muted" aria-hidden="true" />
+            <span>Reset</span>
+          </button>
+        )}
+
         {/* Match Filter Dropdown */}
         <div className="relative" ref={filterRef}>
           <button
@@ -79,7 +99,8 @@ export function JobFilters({
               setIsFilterOpen((prev) => !prev);
               setIsSortOpen(false);
             }}
-            className="inline-flex items-center justify-between gap-2 bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            disabled={isPending}
+            className="inline-flex items-center justify-between gap-2 bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
             aria-expanded={isFilterOpen}
           >
             <span>{MATCH_FILTER_LABELS[matchFilter]}</span>
@@ -117,7 +138,8 @@ export function JobFilters({
               setIsSortOpen((prev) => !prev);
               setIsFilterOpen(false);
             }}
-            className="inline-flex items-center justify-between gap-2 bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer"
+            disabled={isPending}
+            className="inline-flex items-center justify-between gap-2 bg-surface hover:bg-surface-secondary border border-border text-text-primary text-sm font-medium px-4 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
             aria-expanded={isSortOpen}
           >
             <span>{SORT_LABELS[sortOption]}</span>

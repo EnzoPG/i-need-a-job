@@ -1,32 +1,130 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { SearchControls } from "./SearchControls";
 import { JobFilters, type MatchFilterOption, type SortOption } from "./JobFilters";
 import { JobsTable } from "./JobsTable";
 import { JobsPagination } from "./JobsPagination";
-import { MOCK_JOBS, type MockJob } from "@/lib/mock-jobs";
 import type { JobRow } from "@/types/database";
 
-const PAGE_SIZE = 6;
-const HIGH_MATCH_THRESHOLD = 70;
+type Props = {
+  initialJobs: JobRow[];
+  filteredCount: number;
+  totalUserJobsCount: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+  initialFilters: {
+    q: string;
+    match: MatchFilterOption;
+    sort: SortOption;
+  };
+  queryError?: string;
+};
 
-export function FindJobsContent() {
+export function FindJobsContent({
+  initialJobs,
+  filteredCount,
+  totalUserJobsCount,
+  currentPage,
+  totalPages,
+  pageSize,
+  initialFilters,
+  queryError,
+}: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  // Search discovery state (for calling Adzuna agent)
   const [jobTitle, setJobTitle] = useState("Frontend Engineer");
   const [location, setLocation] = useState("Remote, New York...");
-  const [bannerMessage, setBannerMessage] = useState<string | null>(
-    "Found 8 jobs and saved 4 strong matches."
-  );
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [jobs, setJobs] = useState<MockJob[]>(MOCK_JOBS);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [matchFilter, setMatchFilter] = useState<MatchFilterOption>("all");
-  const [sortOption, setSortOption] = useState<SortOption>("match-score");
-  const [currentPage, setCurrentPage] = useState(1);
+  // Filter input state (local string for instant typing, debounced into URL)
+  const [prevInitialQ, setPrevInitialQ] = useState(initialFilters.q);
+  const [searchInput, setSearchInput] = useState(initialFilters.q);
 
+  // Sync search input if URL changes externally (e.g. back/forward navigation or clear)
+  if (initialFilters.q !== prevInitialQ) {
+    setPrevInitialQ(initialFilters.q);
+    setSearchInput(initialFilters.q);
+  }
+
+  // URL updating helper
+  const updateUrl = useCallback(
+    (updates: {
+      q?: string;
+      match?: MatchFilterOption;
+      sort?: SortOption;
+      page?: number;
+    }) => {
+      const current = new URLSearchParams(searchParams.toString());
+
+      const nextQ = updates.q !== undefined ? updates.q : (current.get("q") || "");
+      const nextMatch = updates.match !== undefined ? updates.match : (current.get("match") || "all");
+      const nextSort = updates.sort !== undefined ? updates.sort : (current.get("sort") || "match-score");
+      const nextPage = updates.page !== undefined ? updates.page : parseInt(current.get("page") || "1", 10);
+
+      const params = new URLSearchParams();
+
+      if (nextQ.trim()) {
+        params.set("q", nextQ.trim());
+      }
+      if (nextMatch && nextMatch !== "all") {
+        params.set("match", nextMatch);
+      }
+      if (nextSort && nextSort !== "match-score") {
+        params.set("sort", nextSort);
+      }
+      if (nextPage > 1) {
+        params.set("page", String(nextPage));
+      }
+
+      const qs = params.toString();
+      const targetUrl = qs ? `/find-jobs?${qs}` : "/find-jobs";
+
+      startTransition(() => {
+        router.replace(targetUrl, { scroll: false });
+      });
+    },
+    [router, searchParams]
+  );
+
+  // Debounced search input handler (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== initialFilters.q) {
+        updateUrl({ q: searchInput, page: 1 });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput, initialFilters.q, updateUrl]);
+
+  const handleMatchFilterChange = (filter: MatchFilterOption) => {
+    updateUrl({ match: filter, page: 1 });
+  };
+
+  const handleSortOptionChange = (sort: SortOption) => {
+    updateUrl({ sort, page: 1 });
+  };
+
+  const handlePageChange = (page: number) => {
+    updateUrl({ page });
+  };
+
+  const handleClearFilters = () => {
+    setSearchInput("");
+    updateUrl({ q: "", match: "all", sort: "match-score", page: 1 });
+  };
+
+  // Live Adzuna discovery trigger
   const handleSearchTrigger = async () => {
     if (!jobTitle.trim() || isLoading) return;
 
@@ -68,15 +166,9 @@ export function FindJobsContent() {
       setIsError(false);
       setBannerMessage(data.message || `Discovered ${data.jobsFound || 0} jobs.`);
 
+      // Client telemetry for discovered jobs
       if (Array.isArray(data.jobs) && data.jobs.length > 0) {
-        const receivedJobs: MockJob[] = (data.jobs as JobRow[]).map((job) => ({
-          ...job,
-          displayDate: "Today",
-        }));
-        setJobs(receivedJobs);
-
-        // Track found jobs in client PostHog
-        for (const j of receivedJobs) {
+        for (const j of data.jobs) {
           try {
             posthog.capture("job_found", {
               job_id: j.id,
@@ -85,12 +177,15 @@ export function FindJobsContent() {
               match_score: j.match_score,
             });
           } catch {
-            // Ignore telemetry exceptions
+            // Non-blocking telemetry
           }
         }
       }
 
-      setCurrentPage(1);
+      // Re-execute Server Component queries to refresh the live table data
+      router.refresh();
+      // Ensure we are viewing page 1 after discovering new listings
+      updateUrl({ page: 1 });
     } catch (err) {
       console.error("[FindJobsContent/handleSearchTrigger] Search error:", err);
       setIsError(true);
@@ -100,64 +195,14 @@ export function FindJobsContent() {
     }
   };
 
-  const filteredJobs = useMemo(() => {
-    let result: MockJob[] = [...jobs];
+  const isFiltered = Boolean(
+    initialFilters.q.trim() ||
+      initialFilters.match !== "all" ||
+      initialFilters.sort !== "match-score"
+  );
 
-    // Filter by keyword (company or role)
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (job) =>
-          job.company.toLowerCase().includes(q) ||
-          job.title.toLowerCase().includes(q)
-      );
-    }
-
-    // Filter by match tier
-    if (matchFilter === "high") {
-      result = result.filter((job) => job.match_score >= HIGH_MATCH_THRESHOLD);
-    } else if (matchFilter === "low") {
-      result = result.filter((job) => job.match_score < HIGH_MATCH_THRESHOLD);
-    }
-
-    // Sort
-    result.sort((a, b) => {
-      if (sortOption === "match-score") {
-        return b.match_score - a.match_score;
-      }
-      if (sortOption === "newest") {
-        return new Date(b.found_at).getTime() - new Date(a.found_at).getTime();
-      }
-      if (sortOption === "oldest") {
-        return new Date(a.found_at).getTime() - new Date(b.found_at).getTime();
-      }
-      return 0;
-    });
-
-    return result;
-  }, [jobs, searchQuery, matchFilter, sortOption]);
-
-  const totalResults = filteredJobs.length;
-  const totalPages = Math.max(1, Math.ceil(totalResults / PAGE_SIZE));
-
-  // Compute slice for current page
-  const paginatedJobs = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredJobs.slice(start, start + PAGE_SIZE);
-  }, [filteredJobs, currentPage]);
-
-  const startIndex = totalResults === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const endIndex = Math.min(currentPage * PAGE_SIZE, totalResults);
-
-  const handleSearchQueryChange = (val: string) => {
-    setSearchQuery(val);
-    setCurrentPage(1);
-  };
-
-  const handleMatchFilterChange = (val: MatchFilterOption) => {
-    setMatchFilter(val);
-    setCurrentPage(1);
-  };
+  const startIndex = filteredCount === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, filteredCount);
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -173,27 +218,54 @@ export function FindJobsContent() {
         isError={isError}
       />
 
+      {/* Query Error Notification (if database query encountered error) */}
+      {queryError && (
+        <div className="bg-error/10 border border-error/20 rounded-xl px-4 py-3 flex items-center justify-between text-error text-sm">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+            <span>{queryError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.refresh()}
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface border border-error/30 rounded-lg hover:bg-surface-secondary text-xs font-semibold cursor-pointer transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
       {/* 2. Filter Bar Card */}
       <JobFilters
-        searchQuery={searchQuery}
-        onSearchQueryChange={handleSearchQueryChange}
-        matchFilter={matchFilter}
+        searchQuery={searchInput}
+        onSearchQueryChange={setSearchInput}
+        matchFilter={initialFilters.match}
         onMatchFilterChange={handleMatchFilterChange}
-        sortOption={sortOption}
-        onSortOptionChange={setSortOption}
+        sortOption={initialFilters.sort}
+        onSortOptionChange={handleSortOptionChange}
+        onClearFilters={handleClearFilters}
+        isFiltered={isFiltered}
+        isPending={isPending}
       />
 
       {/* 3. Jobs Table Card */}
-      <JobsTable jobs={paginatedJobs} />
+      <JobsTable
+        jobs={initialJobs}
+        isPending={isPending}
+        totalUserJobsCount={totalUserJobsCount}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* 4. Pagination Footer */}
       <JobsPagination
         currentPage={currentPage}
         totalPages={totalPages}
-        totalResults={totalResults}
+        totalResults={filteredCount}
         startIndex={startIndex}
         endIndex={endIndex}
-        onPageChange={setCurrentPage}
+        onPageChange={handlePageChange}
+        isPending={isPending}
       />
     </div>
   );

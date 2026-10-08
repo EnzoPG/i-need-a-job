@@ -7,6 +7,7 @@ type Props = {
   startIndex: number;
   endIndex: number;
   onPageChange: (page: number) => void;
+  isPending?: boolean;
 };
 
 export function JobsPagination({
@@ -15,7 +16,8 @@ export function JobsPagination({
   totalResults,
   startIndex,
   endIndex,
-  onPageChange
+  onPageChange,
+  isPending = false
 }: Props) {
   if (totalResults === 0) return null;
 
@@ -57,7 +59,11 @@ export function JobsPagination({
   const pages = getPageNumbers();
 
   return (
-    <div className="w-full bg-surface border border-border rounded-2xl px-6 py-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div
+      className={`w-full bg-surface border border-border rounded-2xl px-6 py-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 transition-opacity duration-200 ${
+        isPending ? "opacity-60" : "opacity-100"
+      }`}
+    >
       {/* Results counter */}
       <div className="text-sm text-text-secondary">
         Showing <span className="font-semibold text-text-primary">{startIndex}</span> to{" "}
@@ -71,7 +77,7 @@ export function JobsPagination({
         <button
           type="button"
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage <= 1}
+          disabled={isPending || currentPage <= 1}
           className="px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           Previous
@@ -93,7 +99,8 @@ export function JobsPagination({
               key={p}
               type="button"
               onClick={() => onPageChange(p)}
-              className={`min-w-8 h-8 px-2.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
+              disabled={isPending}
+              className={`min-w-8 h-8 px-2.5 text-xs sm:text-sm font-medium rounded-lg border transition-colors cursor-pointer flex items-center justify-center disabled:opacity-60 ${
                 isActive
                   ? "border-accent bg-accent/10 text-accent font-semibold"
                   : "border-border bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary"
@@ -108,7 +115,7 @@ export function JobsPagination({
         <button
           type="button"
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
+          disabled={isPending || currentPage >= totalPages}
           className="px-3.5 py-1.5 text-xs sm:text-sm font-medium rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-secondary hover:text-text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           Next

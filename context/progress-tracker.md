@@ -6,9 +6,9 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ## Current Status
 
-**Phase:** Phase 3 (Find Jobs Page)
-**Last completed:** 10 Adzuna Job Discovery
-**Next:** 11 Filter + Sort + Pagination
+**Phase:** Phase 4 (Job Details Page)
+**Last completed:** 11 Filter + Sort + Pagination
+**Next:** 12 Job Details Page: Full UI
 
 ---
 
@@ -16,23 +16,23 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ### Phase 1: Foundation
 
-- [x] 01 Homepage
-- [x] 02 Auth
-- [x] 03 PostHog Initialization
-- [x] 04 Database Schema
+- [X] 01 Homepage
+- [X] 02 Auth
+- [X] 03 PostHog Initialization
+- [X] 04 Database Schema
 
 ### Phase 2: Profile Page
 
-- [x] 05 Profile Page: Full UI
-- [x] 06 Profile Save Logic
-- [x] 07 AI Profile Extraction from Resume
-- [x] 08 Resume PDF Generation from Profile
+- [X] 05 Profile Page: Full UI
+- [X] 06 Profile Save Logic
+- [X] 07 AI Profile Extraction from Resume
+- [X] 08 Resume PDF Generation from Profile
 
 ### Phase 3: Find Jobs Page
 
-- [x] 09 Find Jobs Page: Full UI
-- [x] 10 Adzuna Job Discovery
-- [ ] 11 Filter + Sort + Pagination
+- [X] 09 Find Jobs Page: Full UI
+- [X] 10 Adzuna Job Discovery
+- [X] 11 Filter + Sort + Pagination
 
 ### Phase 4: Job Details Page
 
@@ -48,7 +48,7 @@ Update this file after every completed feature. Any AI agent reading this should
 
 ---
 
-## Decisions Made During Build
+* [ ] Decisions Made During Build
 
 * PostHog setup: Configured through the PostHog wizard with client tracking in `instrumentation-client.ts`, server side event logging in `instrumentation.ts` using OpenTelemetry, and user identification on login, dashboard load, and sign out.
 * Profile Page and basic user information: Built [app/profile/page.tsx](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/app/profile/page.tsx) as an authenticated server component that fetches user data from `insforge.auth.getCurrentUser()`. Pre-fills full name and keeps email read only.
@@ -60,6 +60,7 @@ Update this file after every completed feature. Any AI agent reading this should
 * Clean Architecture and SOLID Refactor: Decoupled UI presentation from server actions and utilities by creating dedicated domain contracts in `types/` (`profile.ts`, `resume.ts`, `database.ts`). Centralized database mapping into `lib/mappers/profile.ts` and unified PDF validation in `lib/validation/file.ts`. Decomposed monolithic `ProfileForm.tsx` from 785 lines into focused section subcomponents and extracted the reusable `TagInput` component, completely removing inverted dependencies.
 * Find Jobs Page UI: Built full page UI with mock data matching `context/designs/find-jobs.png` per [docs/specs/0005-find-jobs-page-ui/index.md](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/docs/specs/0005-find-jobs-page-ui/index.md). Implemented modular components in `components/find-jobs/` (`SearchControls`, `JobFilters`, `JobsTable`, `JobsPagination`), isolated mock dataset in `lib/mock-jobs.ts` matching `JobRow`, and client state coordination in `FindJobsContent` with active filtering, sorting, and pagination.
 * Adzuna Job Discovery and AI Scoring: Implemented synchronous discovery and evaluation pipeline via `POST /api/agent/find` with Adzuna API client in `lib/services/adzuna.ts`, OpenAI GPT 4o structured scoring in `lib/services/job-scorer.ts`, InsForge database persistence for `agent_runs`, `jobs`, and `agent_logs`, PostHog telemetry, and interactive search integration in `FindJobsContent`.
+* Filter, Sort, and Pagination on Find Jobs: Replaced mock data dependency on the Find Jobs page with live InsForge database queries driven by Next.js 16 App Router URL search parameters per [docs/specs/0007-filter-sort-pagination/index.md](file:///Users/enzogerola/Documents/GitHub/i-need-a-job/docs/specs/0007-filter-sort-pagination/index.md). Created query service in `lib/services/jobs.ts` with sanitized parameter clamping, exact counts, and user scoping. Added PostgreSQL composite indexes on `(user_id, match_score DESC)` and `(user_id, found_at DESC)`. Coordinated client updates with React 19 `useTransition` and `useRouter.replace({ scroll: false })` for smooth non blocking table updates, debounced keyword search, dual empty state messaging, and live Adzuna search synchronization with `router.refresh()`.
 
 ---
 
